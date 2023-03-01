@@ -32,6 +32,8 @@ impl Initializable for Cactus {
     }
 
     #[system_config]
+    #[in_base_set(CoreSet::PostUpdate)]
+    #[before(apply_system_buffers)]
     fn init_config(_query: Query<&Transform>) {}
 
     #[system_app_config]
@@ -41,4 +43,6 @@ impl Initializable for Cactus {
     fn generic<C: Component>(_query: Query<&C>) {}
 }
 
-fn main() {}
+fn main() {
+    todo!()
+}

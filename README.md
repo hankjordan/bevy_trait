@@ -3,6 +3,11 @@
 
 Macros for creating Traits in Bevy.
 
+## Preview Version
+
+Version `0.0.0` of this crate is a pre-release version which tracks Bevy main.
+Once Bevy `0.10.0` is released, this crate will track the latest Bevy version.
+
 ## Compatibility
 
 NOTE: We do not track Bevy main.

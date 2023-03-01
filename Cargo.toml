@@ -1,0 +1,19 @@
+[package]
+name = "bevy_trait"
+version = "0.1.0"
+edition = "2021"
+description = "Macros for creating Traits in Bevy"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/hankjordan/bevy_trait"
+
+[lib]
+proc-macro = true
+
+[dev-dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy" }
+
+[dependencies]
+syn = { version = "1.0", features = ["full", "extra-traits", "parsing"] }
+quote = "*"
+proc-macro2 = "*"

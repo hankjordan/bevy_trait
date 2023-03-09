@@ -21,6 +21,12 @@ trait Initializable {
 
     #[system]
     fn generic<C: Component>();
+
+    #[system]
+    fn needs_build(data: i32);
+
+    #[system]
+    fn build_generic<C: Component + std::fmt::Debug>(component: C);
 }
 
 struct Cactus;
@@ -28,7 +34,7 @@ struct Cactus;
 impl Initializable for Cactus {
     #[system]
     fn init(_transforms: Query<&Transform>) {
-        let _b = 17;
+        info!("Init!");
     }
 
     #[system_config]
@@ -41,8 +47,31 @@ impl Initializable for Cactus {
 
     #[system]
     fn generic<C: Component>(_query: Query<&C>) {}
+
+    #[system(data: i32)]
+    fn needs_build(query: Query<&Transform, With<Visibility>>) {
+        info!("Data: {:?}", data);
+
+        for tf in &query {
+            info!("Transform {:?}", tf);
+        }
+    }
+
+    #[system(component: C)]
+    fn build_generic<C: Component + std::fmt::Debug>(query: Query<&C>) {
+        info!("Component: {:?}", component);
+
+        for other in &query {
+            info!("Other: {:?}", other);
+        }
+    }
 }
 
 fn main() {
-    todo!()
+    let cactus_init = Cactus::init();
+
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_system(cactus_init)
+        .run();
 }

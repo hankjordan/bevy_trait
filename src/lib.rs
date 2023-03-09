@@ -11,6 +11,10 @@ use quote::{
     ToTokens,
 };
 use syn::{
+    parse::{
+        Parse,
+        ParseStream,
+    },
     parse_macro_input,
     parse_quote,
     punctuated::Punctuated,
@@ -35,17 +39,34 @@ macro_rules! parse_system_input {
     };
 }
 
-fn impl_system<F>(input: ImplItemMethod, output: ReturnType, body: F) -> TokenStream
+struct Args(Punctuated<FnArg, Comma>);
+
+impl Parse for Args {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(Self(Punctuated::parse_terminated(input)?))
+    }
+}
+
+macro_rules! parse_system_args {
+    ($i:ident) => {
+        parse_macro_input!($i as Args)
+    };
+}
+
+fn impl_system<F>(input: ImplItemMethod, args: Args, output: ReturnType, body: F) -> TokenStream
 where
     F: FnOnce(&Punctuated<FnArg, Comma>, &Block) -> proc_macro2::TokenStream,
 {
-    let args = &input.sig.inputs;
+    let params = &input.sig.inputs;
     let block = &input.block;
 
+    let mut is_empty = false;
+
     let body = if let Some(Stmt::Item(Item::Verbatim(item))) = block.stmts.get(0) {
+        is_empty = true;
         item.clone()
     } else {
-        let mut body = body(args, block);
+        let mut body = body(params, block);
 
         for attr in input.attrs {
             let meta = attr.parse_meta().unwrap();
@@ -76,7 +97,10 @@ where
 
     let mut sig = input.sig;
 
-    sig.inputs.clear();
+    if !is_empty {
+        sig.inputs = args.0;
+    }
+
     sig.output = output;
 
     quote! {
@@ -88,7 +112,11 @@ where
 /// Attribute to turn a method of a Trait into a `BoxedSystem`.
 ///
 /// Use this attribute when you want to prevent the implementer of your trait from defining scheduling metadata.
-/// # Example
+/// ### `#[system]`
+/// Defines a system builder method without parameters.
+/// ### `#[system(arg: T, ...)]`
+/// Add args to the macro to add parameters to the builder method.
+/// # Examples
 /// ```
 /// trait Interactive {
 ///     #[system]
@@ -113,16 +141,63 @@ where
 ///         }
 ///     }
 /// }
+///
+/// fn run() {
+///     let system = Cactus::update(); // This is a System ...
+///
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_system(system) // ... that you can add to an App
+///         .run();
+/// }
+/// ```
+/// You can also pass arguments into the system builder.
+/// ```
+/// trait Interactive {
+///     #[system]
+///     fn update(&self);
+/// }
+///
+/// #[derive(Component)]
+/// struct Health(f32);
+///
+/// #[derive(Component, Copy, Clone)]
+/// struct Cactus(u32);
+///
+/// impl Interactive for Cactus {
+///     #[system(&self)]
+///     fn update(
+///         cacti: Query<&GlobalTransform, With<Cactus>>,
+///         creatures: Query<(&GlobalTransform, &mut Health), Without<Cactus>>,
+///     ) {
+///         // This is a normal Bevy system and accepts SystemParams as such.
+///         for cactus_gtf in &cacti {
+///             // ...
+///         }
+///     }
+/// }
+///
+/// fn run() {
+///     let cactus = Cactus(42);
+///     let system = cactus.update(); // This is a System ...
+///
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_system(system) // ... that you can add to an App
+///         .run();
+/// }
 /// ```
 #[proc_macro_attribute]
-pub fn system(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn system(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_system_input!(input);
+    let args = parse_system_args!(args);
 
     impl_system(
         input,
+        args,
         parse_quote! { -> bevy::ecs::system::BoxedSystem },
-        |args, block| {
-            quote! { Box::new(bevy::ecs::system::IntoSystem::into_system(|#args| #block)) }
+        |params, system| {
+            quote! { Box::new(bevy::ecs::system::IntoSystem::into_system(move |#params| #system)) }
         },
     )
 }
@@ -130,7 +205,11 @@ pub fn system(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// Attribute to turn a method of a Trait into a`SystemConfig`.
 ///
 /// Use this attribute when you want the implementer of your trait to be able to define scheduling metadata.
-/// # Example
+/// ### `#[system_config]`
+/// Defines a system builder method without parameters.
+/// ### `#[system_config(arg: T, ...)]`
+/// Add args to the macro to add parameters to the builder method.
+/// # Examples
 /// ```
 /// trait Interactive {
 ///     #[system_config]
@@ -157,6 +236,53 @@ pub fn system(_args: TokenStream, input: TokenStream) -> TokenStream {
 ///         }
 ///     }
 /// }
+///
+/// fn run() {
+///     let system = Cactus::update(); // This is a System ...
+///
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_system(system) // ... that you can add to an App
+///         .run();
+/// }
+/// ```
+/// You can also pass arguments into the system builder.
+/// ```
+/// trait Interactive {
+///     #[system_config]
+///     fn update(&self);
+/// }
+///
+/// #[derive(Component)]
+/// struct Health(f32);
+///
+/// #[derive(Component, Copy, Clone)]
+/// struct Cactus(u32);
+///
+/// impl Interactive for Cactus {
+///     #[system_config(&self)]
+///     #[in_base_set(CoreSet::PreUpdate)] // Implementer can specify SystemSet
+///     #[before(apply_system_buffers)] // ... and even relative ordering
+///     fn update(
+///         cacti: Query<&GlobalTransform, With<Cactus>>,
+///         creatures: Query<(&GlobalTransform, &mut Health), Without<Cactus>>,
+///     ) {
+///         // This is a normal Bevy system and accepts SystemParams as such.
+///         for cactus_gtf in &cacti {
+///             // ...
+///         }
+///     }
+/// }
+///
+/// fn run() {
+///     let cactus = Cactus(42);
+///     let system = cactus.update(); // This is a System ...
+///
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_system(system) // ... that you can add to an App
+///         .run();
+/// }
 /// ```
 /// # Attributes
 /// Add any of these attributes alongside `#[system_config]` to define schedule metadata for the system.
@@ -182,21 +308,27 @@ pub fn system(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// &emsp;&emsp; *See `IntoSystemConfig::ambiguous_with_all`.*
 /// <br/>&nbsp;<br/>&nbsp;
 #[proc_macro_attribute]
-pub fn system_config(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn system_config(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_system_input!(input);
+    let args = parse_system_args!(args);
 
     impl_system(
         input,
+        args,
         parse_quote! { -> bevy::ecs::schedule::SystemConfig },
-        |args, block| {
-            quote! { (|#args| #block).into_config() }
+        |params, system| {
+            quote! { (move |#params| #system).into_config() }
         },
     )
 }
 
 /// Attribute to turn a method of a Trait into a `SystemAppConfig`.
 ///
-/// Use this attribute when you want the implementer of your trait to be able to define App-aware scheduling metadata.
+/// Use this attribute when you want the implementer of your trait to be able to define App-aware scheduling metadata.\
+/// ### `#[system_app_config]`
+/// Defines a system builder method without parameters.
+/// ### `#[system_app_config(arg: T, ...)]`
+/// Add args to the macro to add parameters to the builder method.
 /// # Example
 /// ```
 /// trait Interactive {
@@ -224,6 +356,54 @@ pub fn system_config(_args: TokenStream, input: TokenStream) -> TokenStream {
 ///             // ...
 ///         }
 ///     }
+/// }
+///
+/// fn run() {
+///     let system = Cactus::update(); // This is a System ...
+///
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_system(system) // ... that you can add to an App
+///         .run();
+/// }
+/// ```
+/// You can also pass arguments into the system builder.
+/// ```
+/// trait Interactive {
+///     #[system_app_config]
+///     fn update(&self);
+/// }
+///
+/// #[derive(Component)]
+/// struct Health(f32);
+///
+/// #[derive(Component, Copy, Clone)]
+/// struct Cactus(u32);
+///
+/// impl Interactive for Cactus {
+///     #[system_app_config(&self)]
+///     #[in_base_set(CoreSet::PreUpdate)] // Implementer can specify SystemSet
+///     #[before(apply_system_buffers)] // ... relative ordering ...
+///     #[in_schedule(CoreSchedule::Main)] // ... and even schedule
+///     fn update(
+///         cacti: Query<&GlobalTransform, With<Cactus>>,
+///         creatures: Query<(&GlobalTransform, &mut Health), Without<Cactus>>,
+///     ) {
+///         // This is a normal Bevy system and accepts SystemParams as such.
+///         for cactus_gtf in &cacti {
+///             // ...
+///         }
+///     }
+/// }
+///
+/// fn run() {
+///     let cactus = Cactus(42);
+///     let system = cactus.update(); // This is a System ...
+///
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_system(system) // ... that you can add to an App
+///         .run();
 /// }
 /// ```
 /// # Attributes
@@ -257,14 +437,16 @@ pub fn system_config(_args: TokenStream, input: TokenStream) -> TokenStream {
 /// ### &ensp; attr `#[on_startup]`
 /// &emsp;&emsp; *See `IntoSystemAppConfig::on_startup`.*
 #[proc_macro_attribute]
-pub fn system_app_config(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn system_app_config(args: TokenStream, input: TokenStream) -> TokenStream {
     let input = parse_system_input!(input);
+    let args = parse_system_args!(args);
 
     impl_system(
         input,
+        args,
         parse_quote! { -> bevy::app::SystemAppConfig },
-        |args, block| {
-            quote! { (|#args| #block).into_app_config() }
+        |params, system| {
+            quote! { (move |#params| #system).into_app_config() }
         },
     )
 }

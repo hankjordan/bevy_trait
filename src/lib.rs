@@ -62,6 +62,8 @@ where
 
     let mut is_empty = false;
 
+    let mut attrs = Vec::new();
+
     let body = if let Some(Stmt::Item(Item::Verbatim(item))) = block.stmts.get(0) {
         is_empty = true;
         item.clone()
@@ -88,7 +90,9 @@ where
                 "no_default_base_set" | "ambiguous_with_all" | "on_startup" => {
                     body = quote! { #body.#tokens() };
                 }
-                _ => {}
+                _ => {
+                    attrs.push(attr);
+                }
             }
         }
 
@@ -104,7 +108,7 @@ where
     sig.output = output;
 
     quote! {
-        #sig #body
+        #(#attrs)* #sig #body
     }
     .into()
 }

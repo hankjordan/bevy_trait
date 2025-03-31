@@ -1,11 +1,23 @@
-[package]
-name = "bevy_trait"
-version = "0.3.3"
+[workspace]
+members = [".", "impl"]
+
+[workspace.package]
+version = "0.3.4"
 edition = "2021"
 description = "Macros for creating Traits in Bevy"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/hankjordan/bevy_trait"
+rust-version = "1.82.0"
+
+[package]
+name = "bevy_trait"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
 
 [lib]
 proc-macro = true
@@ -14,6 +26,5 @@ proc-macro = true
 bevy = "0.15.3"
 
 [dependencies]
-syn = { version = "2.0", features = ["full"] }
+bevy_trait_impl = { version = "0.3.3", path = "impl" }
 quote = "1.0"
-proc-macro2 = "1.0"

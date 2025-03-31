@@ -5,137 +5,9 @@
 #![allow(clippy::redundant_closure_for_method_calls)]
 #![doc = include_str!("../README.md")]
 
+use bevy_trait_impl::WrapImplSystem;
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-use quote::{
-    quote,
-    ToTokens,
-};
-use syn::{
-    parse::{
-        Parse,
-        ParseStream,
-    },
-    parse_quote,
-    punctuated::Punctuated,
-    Token,
-    TraitItemFn,
-};
-
-#[derive(Clone)]
-struct Args(Punctuated<syn::FnArg, Token![,]>);
-
-impl Parse for Args {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        Ok(Self(Punctuated::parse_terminated(input)?))
-    }
-}
-
-struct IntoSystem {
-    args: Args,
-    func: TraitItemFn,
-}
-
-impl IntoSystem {
-    fn new(args: TokenStream, func: TokenStream) -> Self {
-        Self {
-            args: syn::parse(args).unwrap(),
-            func: syn::parse(func).expect("this attribute macro only works on trait fns"),
-        }
-    }
-}
-
-impl ToTokens for IntoSystem {
-    fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let Args(mut args) = self.args.clone();
-        let mut input = self.func.clone();
-
-        let mut with_input = false;
-        let mut readonly = false;
-        let mut boxed = false;
-
-        let mut attrs = vec![];
-
-        for attr in std::mem::take(&mut input.attrs) {
-            let Some(ident) = attr.meta.path().get_ident() else {
-                attrs.push(attr);
-                continue;
-            };
-
-            match &*ident.to_string() {
-                "with_input" => {
-                    with_input = true;
-                }
-                "readonly" => {
-                    readonly = true;
-                }
-                "boxed" => {
-                    boxed = true;
-                }
-                _ => {
-                    attrs.push(attr);
-                }
-            }
-        }
-
-        input.attrs = attrs;
-
-        if input.default.is_some() {
-            std::mem::swap(&mut args, &mut input.sig.inputs);
-        }
-
-        let sys_out = input.sig.output;
-
-        let out = if let syn::ReturnType::Type(_, ty) = sys_out.clone() {
-            *ty
-        } else {
-            parse_quote! { () }
-        };
-
-        let sys_in = if with_input {
-            *match args.first().expect("Expected SystemInput argument") {
-                syn::FnArg::Receiver(receiver) => receiver.ty.clone(),
-                syn::FnArg::Typed(pat_type) => pat_type.ty.clone(),
-            }
-        } else {
-            parse_quote! { () }
-        };
-
-        let bound: syn::TypeParamBound = if readonly {
-            parse_quote! {
-                ::bevy::ecs::system::ReadOnlySystem<In = #sys_in, Out = #out>
-            }
-        } else {
-            parse_quote! {
-                ::bevy::ecs::system::System<In = #sys_in, Out = #out>
-            }
-        };
-
-        input.sig.output = if boxed {
-            parse_quote! {
-                -> ::std::boxed::Box<dyn #bound>
-            }
-        } else {
-            parse_quote! {
-                -> impl #bound
-            }
-        };
-
-        if let Some(body) = &mut input.default {
-            let inner = quote! {
-                ::bevy::ecs::system::IntoSystem::into_system(move |#args| #sys_out #body)
-            };
-
-            if boxed {
-                *body = parse_quote! {{ ::std::boxed::Box::new(#inner) }};
-            } else {
-                *body = parse_quote! {{ #inner }};
-            }
-        }
-
-        input.to_tokens(tokens);
-    }
-}
+use quote::ToTokens;
 
 /// Attribute to use a Trait fn like it's a [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html).
 ///
@@ -235,7 +107,9 @@ impl ToTokens for IntoSystem {
 /// ```
 #[proc_macro_attribute]
 pub fn system(args: TokenStream, func: TokenStream) -> TokenStream {
-    IntoSystem::new(args, func).into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
@@ -249,9 +123,10 @@ pub fn system(args: TokenStream, func: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[with_input] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .with_input()
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html).
@@ -265,9 +140,10 @@ pub fn system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn readonly_system(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[readonly] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .readonly()
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
@@ -282,10 +158,11 @@ pub fn readonly_system(args: TokenStream, func: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn readonly_system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[readonly] });
-    input.func.attrs.push(parse_quote! { #[with_input] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .readonly()
+        .with_input()
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a boxed [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html).
@@ -299,9 +176,10 @@ pub fn readonly_system_with_input(args: TokenStream, func: TokenStream) -> Token
 /// ```
 #[proc_macro_attribute]
 pub fn boxed_system(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[boxed] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .boxed()
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a boxed [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
@@ -316,10 +194,11 @@ pub fn boxed_system(args: TokenStream, func: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn boxed_system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[boxed] });
-    input.func.attrs.push(parse_quote! { #[with_input] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .boxed()
+        .with_input()
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html).
@@ -334,10 +213,11 @@ pub fn boxed_system_with_input(args: TokenStream, func: TokenStream) -> TokenStr
 /// ```
 #[proc_macro_attribute]
 pub fn boxed_readonly_system(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[boxed] });
-    input.func.attrs.push(parse_quote! { #[readonly] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .boxed()
+        .readonly()
+        .into_token_stream()
+        .into()
 }
 
 /// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
@@ -353,9 +233,10 @@ pub fn boxed_readonly_system(args: TokenStream, func: TokenStream) -> TokenStrea
 /// ```
 #[proc_macro_attribute]
 pub fn boxed_readonly_system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
-    let mut input = IntoSystem::new(args, func);
-    input.func.attrs.push(parse_quote! { #[boxed] });
-    input.func.attrs.push(parse_quote! { #[readonly] });
-    input.func.attrs.push(parse_quote! { #[with_input] });
-    input.into_token_stream().into()
+    WrapImplSystem::new(args.into(), func.into())
+        .boxed()
+        .readonly()
+        .with_input()
+        .into_token_stream()
+        .into()
 }

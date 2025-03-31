@@ -15,7 +15,7 @@ Since `bevy_trait` does not rely on `bevy` directly, it is typically compatible 
 
 ## License
 
-`bevy_save` is dual-licensed under MIT and Apache-2.0.
+`bevy_trait` is dual-licensed under MIT and Apache-2.0.
 
 [img_bevy]: https://img.shields.io/badge/Bevy-0.15-blue
 [img_version]: https://img.shields.io/crates/v/bevy_trait.svg

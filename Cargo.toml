@@ -1,6 +1,6 @@
 [package]
 name = "bevy_trait"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 description = "Macros for creating Traits in Bevy"
 license = "MIT OR Apache-2.0"

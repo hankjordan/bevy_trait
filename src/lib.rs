@@ -137,7 +137,7 @@ impl ToTokens for IntoSystem {
     }
 }
 
-/// Attribute to use a Trait fn like it's a [`System`](bevy::ecs::system::System).
+/// Attribute to use a Trait fn like it's a [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html).
 ///
 /// ### `#[system]`
 /// Defines a system builder fn without parameters.
@@ -151,10 +151,10 @@ impl ToTokens for IntoSystem {
 /// Makes the fn box the returned system trait object.
 ///
 /// ### `#[readonly]`
-/// Makes the fn return an object that impls [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem).
+/// Makes the fn return an object that impls [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html).
 ///
 /// ### `#[with_input]`
-/// Makes the fn return a system trait object that accepts [`SystemInput`](bevy::ecs::system::SystemInput).
+/// Makes the fn return a system trait object that accepts [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
 ///
 /// # Examples
 /// ```
@@ -238,7 +238,7 @@ pub fn system(args: TokenStream, func: TokenStream) -> TokenStream {
     IntoSystem::new(args, func).into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a [`System`](bevy::ecs::system::System), with [`SystemInput`](bevy::ecs::system::SystemInput).
+/// Attribute to use a Trait fn like it's a [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
 ///
 /// See [`macro@system`] for usage and examples
 ///
@@ -254,9 +254,9 @@ pub fn system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
     input.into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem).
+/// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html).
 ///
-/// See [`system`](attr.system) for usage and examples
+/// See [`macro@system`] for usage and examples
 ///
 /// Alias of
 /// ```ignore
@@ -270,7 +270,7 @@ pub fn readonly_system(args: TokenStream, func: TokenStream) -> TokenStream {
     input.into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem), with [`SystemInput`](bevy::ecs::system::SystemInput).
+/// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
 ///
 /// See [`macro@system`] for usage and examples
 ///
@@ -288,7 +288,7 @@ pub fn readonly_system_with_input(args: TokenStream, func: TokenStream) -> Token
     input.into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a boxed [`System`](bevy::ecs::system::System).
+/// Attribute to use a Trait fn like it's a boxed [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html).
 ///
 /// See [`macro@system`] for usage and examples
 ///
@@ -304,7 +304,7 @@ pub fn boxed_system(args: TokenStream, func: TokenStream) -> TokenStream {
     input.into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a boxed [`System`](bevy::ecs::system::System), with [`SystemInput`](bevy::ecs::system::SystemInput).
+/// Attribute to use a Trait fn like it's a boxed [`System`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.System.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
 ///
 /// See [`macro@system`] for usage and examples
 ///
@@ -322,7 +322,7 @@ pub fn boxed_system_with_input(args: TokenStream, func: TokenStream) -> TokenStr
     input.into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem).
+/// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html).
 ///
 /// See [`macro@system`] for usage and examples
 ///
@@ -340,7 +340,7 @@ pub fn boxed_readonly_system(args: TokenStream, func: TokenStream) -> TokenStrea
     input.into_token_stream().into()
 }
 
-/// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem), with [`SystemInput`](bevy::ecs::system::SystemInput).
+/// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.ReadOnlySystem.html), with [`SystemInput`](https://docs.rs/bevy/latest/bevy/ecs/system/trait.SystemInput.html).
 ///
 /// See [`macro@system`] for usage and examples
 ///

@@ -4,6 +4,54 @@
 
 Macros for creating Traits in Bevy.
 
+## System
+
+Turn a trait fn into a Bevy system
+
+```ignore
+trait Interactive {
+    #[system]
+    fn update(damage: f32);
+}
+
+/*
+// Desugars to
+trait Interactive {
+    fn update(damage: f32) -> impl System;
+}
+*/
+
+#[derive(Component)]
+struct Health(f32);
+
+#[derive(Component, Copy, Clone)]
+struct Cactus;
+
+impl Interactive for Cactus {
+    #[system(damage: f32)]
+    fn update(
+        cacti: Query<&GlobalTransform, With<Cactus>>,
+        creatures: Query<(&GlobalTransform, &mut Health), Without<Cactus>>,
+    ) {
+        // This is a normal Bevy system and accepts SystemParams as such.
+        for cactus_gtf in &cacti {
+            info!("Damage {:?}", damage); // You can also use params passed into the System builder.
+
+            // ...
+        }
+    }
+}
+ 
+fn run() {
+    let system = Cactus::update(42); // This is a System ...
+ 
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_systems(Update, system) // ... that you can add to an App
+        .run();
+}
+```
+
 ## Compatibility
 
 Since `bevy_trait` does not rely on `bevy` directly, it is typically compatible across many different versions.

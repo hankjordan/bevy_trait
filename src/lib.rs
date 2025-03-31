@@ -240,6 +240,8 @@ pub fn system(args: TokenStream, func: TokenStream) -> TokenStream {
 
 /// Attribute to use a Trait fn like it's a [`System`](bevy::ecs::system::System), with [`SystemInput`](bevy::ecs::system::SystemInput).
 ///
+/// See [`system`](crate::system)
+///
 /// Alias of
 /// ```ignore
 /// #[system]
@@ -254,6 +256,8 @@ pub fn system_with_input(args: TokenStream, func: TokenStream) -> TokenStream {
 
 /// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem).
 ///
+/// See [`system`](crate::system)
+///
 /// Alias of
 /// ```ignore
 /// #[system]
@@ -267,6 +271,8 @@ pub fn readonly_system(args: TokenStream, func: TokenStream) -> TokenStream {
 }
 
 /// Attribute to use a Trait fn like it's a [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem), with [`SystemInput`](bevy::ecs::system::SystemInput).
+///
+/// See [`system`](crate::system)
 ///
 /// Alias of
 /// ```ignore
@@ -284,6 +290,8 @@ pub fn readonly_system_with_input(args: TokenStream, func: TokenStream) -> Token
 
 /// Attribute to use a Trait fn like it's a boxed [`System`](bevy::ecs::system::System).
 ///
+/// See [`system`](crate::system)
+///
 /// Alias of
 /// ```ignore
 /// #[system]
@@ -297,6 +305,8 @@ pub fn boxed_system(args: TokenStream, func: TokenStream) -> TokenStream {
 }
 
 /// Attribute to use a Trait fn like it's a boxed [`System`](bevy::ecs::system::System), with [`SystemInput`](bevy::ecs::system::SystemInput).
+///
+/// See [`system`](crate::system)
 ///
 /// Alias of
 /// ```ignore
@@ -314,6 +324,8 @@ pub fn boxed_system_with_input(args: TokenStream, func: TokenStream) -> TokenStr
 
 /// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem).
 ///
+/// See [`system`](crate::system)
+///
 /// Alias of
 /// ```ignore
 /// #[system]
@@ -329,6 +341,8 @@ pub fn boxed_readonly_system(args: TokenStream, func: TokenStream) -> TokenStrea
 }
 
 /// Attribute to use a Trait fn like it's a boxed [`ReadOnlySystem`](bevy::ecs::system::ReadOnlySystem), with [`SystemInput`](bevy::ecs::system::SystemInput).
+///
+/// See [`system`](crate::system)
 ///
 /// Alias of
 /// ```ignore

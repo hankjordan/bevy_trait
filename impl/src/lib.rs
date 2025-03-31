@@ -3,7 +3,7 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::redundant_closure_for_method_calls)]
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{

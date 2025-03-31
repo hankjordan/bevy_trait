@@ -5,12 +5,6 @@ trait Initializable {
     #[system]
     fn init();
 
-    #[system_config]
-    fn init_config();
-
-    #[system_app_config]
-    fn init_app_config();
-
     #[system]
     fn empty() {}
 
@@ -27,6 +21,10 @@ trait Initializable {
 
     #[system]
     fn build_generic<C: Component + std::fmt::Debug>(component: C);
+
+    fn desugared_system() -> impl System;
+
+    fn desugared_boxed_system() -> bevy::ecs::system::BoxedSystem;
 }
 
 struct Cactus;
@@ -36,14 +34,6 @@ impl Initializable for Cactus {
     fn init(_transforms: Query<&Transform>) {
         info!("Init!");
     }
-
-    #[system_config]
-    #[in_base_set(CoreSet::PostUpdate)]
-    #[before(apply_system_buffers)]
-    fn init_config(_query: Query<&Transform>) {}
-
-    #[system_app_config]
-    fn init_app_config() {}
 
     #[system]
     fn generic<C: Component>(_query: Query<&C>) {}
@@ -65,13 +55,33 @@ impl Initializable for Cactus {
             info!("Other: {:?}", other);
         }
     }
+
+    fn desugared_system() -> impl System {
+        bevy::ecs::system::IntoSystem::into_system(|tfs: Query<&Transform>| {
+            for tf in &tfs {
+                info!("Transform {:?}", tf)
+            }
+        })
+    }
+
+    fn desugared_boxed_system() -> bevy::ecs::system::BoxedSystem {
+        Box::new(bevy::ecs::system::IntoSystem::into_system(
+            |tfs: Query<&Transform>| {
+                for tf in &tfs {
+                    info!("Transform {:?}", tf)
+                }
+            },
+        ))
+    }
 }
 
 fn main() {
-    let cactus_init = Cactus::init();
-
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_system(cactus_init)
+        .add_systems(Startup, Cactus::init())
+        .add_systems(
+            Update,
+            (Cactus::needs_build(100), Cactus::generic::<Transform>()),
+        )
         .run();
 }
